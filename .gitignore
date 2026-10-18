@@ -1,0 +1,48 @@
+# CMake / Build artifacts
+build/
+bin/
+out/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+doc/
+share/
+man/
+
+# MSVC / Visual Studio
+.vs/
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+*.sln
+*.vcxproj
+*.filters
+*.dir/
+
+# Compiled object and binary files
+*.obj
+*.o
+*.ilk
+*.pdb
+*.exp
+*.lib
+*.dll
+*.exe
+
+# Qt Generated files
+*.moc
+moc_*.cpp
+moc_*.h
+qrc_*.cpp
+ui_*.h
+
+# Python test artifacts
+__pycache__/
+*.pyc
+
+# OS generated files
+Thumbs.db
+Desktop.ini
+.DS_Store
