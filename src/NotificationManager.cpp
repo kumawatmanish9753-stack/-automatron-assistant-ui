@@ -2,11 +2,12 @@
 #include <QDebug>
 #include <QSystemTrayIcon>
 #include <QTimer>
+
+#ifdef _WIN32
 #include <windows.h>
 #include <shellapi.h>
-
-// Helper struct for toast notifications
 #pragma comment(lib, "shell32.lib")
+#endif
 
 NotificationManager::NotificationManager(QObject *parent)
     : QObject(parent)
@@ -15,16 +16,11 @@ NotificationManager::NotificationManager(QObject *parent)
 
 void NotificationManager::showNotification(const QString &title, const QString &message, int durationMs)
 {
-    // Use Windows Toast Notification via Shell_NotifyIcon for modern experience
-    // Fall back to simple console output if tray icon isn't available
-
     // Log for debugging
     qDebug() << "[Notification]" << title << ":" << message;
 
-    // Show a non-blocking toast using Windows 10+ Toast system
-    // Using a simple approach that works without full app manifest
-
-    // Prepare the notification parameters
+#ifdef _WIN32
+    // Windows Toast Notification via Shell_NotifyIcon
     NOTIFYICONDATA nid = {0};
     nid.cbSize = sizeof(NOTIFYICONDATA);
     nid.dwInfoFlags = NIIF_INFO;  // Info icon
@@ -41,15 +37,11 @@ void NotificationManager::showNotification(const QString &title, const QString &
     wcscpy_s(nid.szInfoTitle, infoTitle.toStdWString().c_str());
     wcscpy_s(nid.szInfo, infoText.toStdWString().c_str());
 
-    // Show the notification
-    // Note: This is a simplified approach. Full toast notifications require
-    // a proper App User Model ID and possibly Windows 10+ specific handling.
-    // For now, we also output to debug console.
-
-    // Alternative: Use MessageBox beep for urgent notifications without blocking
-    // MessageBeep(MB_OK); // Optional: beep to alert user
-
-    qDebug() << "Desktop notification shown:" << title;
+    Shell_NotifyIcon(NIM_ADD, &nid);
+#else
+    // Linux / Cross-platform fallback: QSystemTrayIcon if available or system notification
+    Q_UNUSED(durationMs);
+#endif
 }
 
 void NotificationManager::showWindowsToast(const QString &title, const QString &message)

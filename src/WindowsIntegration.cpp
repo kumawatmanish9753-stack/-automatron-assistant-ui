@@ -1,11 +1,18 @@
 #include "WindowsIntegration.h"
+#include <QProcess>
+#include <iostream>
+
+#ifdef _WIN32
 #include <windows.h>
 #include <winuser.h>
 #include <winreg.h>
 #include <powrprof.h>
 #include <tlhelp32.h>
-#include <QProcess>
-#include <iostream>
+#else
+#include <QDir>
+#include <QFile>
+#include <QTextStream>
+#endif
 
 struct WindowsIntegration::Impl {
     bool hotkeyRegistered = false;
@@ -13,12 +20,32 @@ struct WindowsIntegration::Impl {
 
     // Helper for checking battery status
     void updateBatteryStatus() {
+#ifdef _WIN32
         SYSTEM_POWER_STATUS status;
         if (GetSystemPowerStatus(&status)) {
             onBattery = (status.ACLineStatus == 0);
         } else {
             onBattery = false;
         }
+#else
+        // Linux battery status check via /sys/class/power_supply/
+        onBattery = false;
+        QDir powerDir("/sys/class/power_supply");
+        QStringList entries = powerDir.entryList(QDir::Dirs | QDir::NoDotAndDotDot);
+        for (const QString &entry : entries) {
+            if (entry.startsWith("BAT")) {
+                QFile typeFile(powerDir.filePath(entry + "/status"));
+                if (typeFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                    QTextStream in(&typeFile);
+                    QString statusStr = in.readLine().trimmed();
+                    if (statusStr.compare("Discharging", Qt::CaseInsensitive) == 0) {
+                        onBattery = true;
+                        break;
+                    }
+                }
+            }
+        }
+#endif
     }
 };
 
@@ -38,6 +65,7 @@ bool WindowsIntegration::registerGlobalHotkey()
 {
     if (m_impl->hotkeyRegistered) return true;
 
+#ifdef _WIN32
     // Register Ctrl+Shift+K (Ctrl = MOD_CONTROL, Shift = MOD_SHIFT, K = 0x4B)
     // Using ID 1234 as a unique identifier for our hotkey
     BOOL success = RegisterHotKey(
@@ -49,9 +77,6 @@ bool WindowsIntegration::registerGlobalHotkey()
 
     if (success) {
         m_impl->hotkeyRegistered = true;
-
-        // Start a separate thread or timer to poll for hotkey messages
-        // For simplicity, we'll let the main message loop handle it via nativeEventFilter
         std::cout << "Global hotkey Ctrl+Shift+K registered successfully." << std::endl;
     } else {
         DWORD err = GetLastError();
@@ -59,12 +84,20 @@ bool WindowsIntegration::registerGlobalHotkey()
     }
 
     return success;
+#else
+    // Linux stub — global hotkeys handled by HotkeyMonitor via nativeEventFilter
+    m_impl->hotkeyRegistered = true;
+    std::cout << "Global hotkey registered (Linux stub)." << std::endl;
+    return true;
+#endif
 }
 
 void WindowsIntegration::unregisterGlobalHotkey()
 {
     if (m_impl->hotkeyRegistered) {
+#ifdef _WIN32
         UnregisterHotKey(nullptr, 1234);
+#endif
         m_impl->hotkeyRegistered = false;
         std::cout << "Global hotkey unregistered." << std::endl;
     }
@@ -72,28 +105,28 @@ void WindowsIntegration::unregisterGlobalHotkey()
 
 void WindowsIntegration::showDesktopNotification(const QString &title, const QString &message, int durationMs)
 {
-    // Windows toast notifications require a modern app with COM activation.
-    // For simplicity, we'll use a legacy system tray balloon message.
-    // In a real application, you'd want to use the modern Windows Toast API.
+    Q_UNUSED(durationMs);
     std::cout << "[Desktop Notification] " << title.toStdString() << ": " << message.toStdString() << std::endl;
-
-    // Fallback: Show a MessageBox (non-blocking) for demonstration.
-    // In production, you'd schedule a system toast.
-    // This is just a placeholder implementation.
 }
 
 bool WindowsIntegration::isOnBatteryPower() const
 {
+#ifdef _WIN32
     SYSTEM_POWER_STATUS status;
     if (GetSystemPowerStatus(&status)) {
         return (status.ACLineStatus == 0);
     }
     return false;
+#else
+    return m_impl->onBattery;
+#endif
 }
 
 bool WindowsIntegration::terminateProcessByName(const QString &processName)
 {
     bool foundAndKilled = false;
+
+#ifdef _WIN32
     HANDLE snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
     if (snapshot != INVALID_HANDLE_VALUE) {
         PROCESSENTRY32W entry;
@@ -113,8 +146,17 @@ bool WindowsIntegration::terminateProcessByName(const QString &processName)
         CloseHandle(snapshot);
     }
 
-    // Fallback: also try taskkill to be thorough (in case of child processes/permissions)
+    // Fallback: taskkill to handle child processes / permission edge cases
     QProcess::startDetached("taskkill", QStringList() << "/F" << "/IM" << processName);
+#else
+    // Linux / POSIX: strip .exe suffix if present, then use killall
+    QString cleanName = processName;
+    if (cleanName.endsWith(".exe", Qt::CaseInsensitive)) {
+        cleanName.chop(4);
+    }
+    int exitCode = QProcess::execute("killall", QStringList() << cleanName);
+    foundAndKilled = (exitCode == 0);
+#endif
 
     return foundAndKilled;
 }

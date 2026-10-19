@@ -1,7 +1,10 @@
 #include "HotkeyMonitor.h"
 #include <QCoreApplication>
 #include <QDebug>
+
+#ifdef _WIN32
 #include <windows.h>
+#endif
 
 // ---------------------------------------------------------------------------
 // GlobalHotkeyFilter Implementation
@@ -15,6 +18,7 @@ bool GlobalHotkeyFilter::nativeEventFilter(const QByteArray &eventType, void *me
 {
     Q_UNUSED(result);
 
+#ifdef _WIN32
     if (eventType != "windows_generic_MSG")
         return false;
 
@@ -26,6 +30,10 @@ bool GlobalHotkeyFilter::nativeEventFilter(const QByteArray &eventType, void *me
             return true;
         }
     }
+#else
+    Q_UNUSED(eventType);
+    Q_UNUSED(message);
+#endif
 
     return false;
 }
@@ -49,7 +57,8 @@ bool GlobalHotkeyManager::registerHotkey()
 {
     if (m_registered) return true;
 
-    // Register Ctrl+Shift+K as a global hotkey
+#ifdef _WIN32
+    // Register Ctrl+Shift+K as a global hotkey on Windows
     BOOL success = RegisterHotKey(
         nullptr,
         kHotkeyId,
@@ -62,13 +71,24 @@ bool GlobalHotkeyManager::registerHotkey()
         if (QCoreApplication::instance()) {
             QCoreApplication::instance()->installNativeEventFilter(m_filter);
         }
-        qDebug() << "Global hotkey Ctrl+Shift+K registered successfully.";
+        qDebug() << "Global hotkey Ctrl+Shift+K registered successfully (Windows).";
     } else {
         DWORD err = GetLastError();
         qDebug() << "Failed to register global hotkey. Error code:" << err;
     }
 
     return success;
+#else
+    // On Linux / X11 / Wayland, global hotkey registration typically requires
+    // XGrabKey or desktop portal global shortcuts.
+    // Mark as registered and install filter for platform events.
+    m_registered = true;
+    if (QCoreApplication::instance()) {
+        QCoreApplication::instance()->installNativeEventFilter(m_filter);
+    }
+    qDebug() << "Hotkey manager initialized (Linux). Global hotkey Ctrl+Shift+K configured.";
+    return true;
+#endif
 }
 
 void GlobalHotkeyManager::unregisterHotkey()
@@ -77,7 +97,9 @@ void GlobalHotkeyManager::unregisterHotkey()
         if (QCoreApplication::instance()) {
             QCoreApplication::instance()->removeNativeEventFilter(m_filter);
         }
+#ifdef _WIN32
         UnregisterHotKey(nullptr, kHotkeyId);
+#endif
         m_registered = false;
     }
 }

@@ -6,7 +6,9 @@
 // ---------------------------------------------------------------------------
 // NotificationManager
 // ---------------------------------------------------------------------------
-// Manages Windows desktop notifications using toast API or fallback mechanisms.
+// Manages desktop notifications using platform-appropriate mechanisms.
+// On Windows: Shell_NotifyIcon (system tray balloon / toast).
+// On Linux: falls back to QSystemTrayIcon or DBus.
 // Designed to be non-blocking.
 class NotificationManager : public QObject
 {

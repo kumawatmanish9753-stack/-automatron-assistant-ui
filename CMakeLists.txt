@@ -48,7 +48,12 @@ set(SOURCES
 )
 
 # Create executable
-add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+# WIN32 flag hides the console on Windows; on Linux it is ignored
+if(WIN32)
+    add_executable(${PROJECT_NAME} WIN32 ${SOURCES})
+else()
+    add_executable(${PROJECT_NAME} ${SOURCES})
+endif()
 
 # Link Qt libraries
 target_link_libraries(${PROJECT_NAME} PRIVATE
@@ -65,7 +70,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_NAME "Voice-AI"
 )
 
-# Windows specific settings
+# Platform-specific settings
 if(WIN32)
     target_compile_definitions(${PROJECT_NAME} PRIVATE
         UNICODE
@@ -77,4 +82,10 @@ if(WIN32)
         shell32
         powrprof
     )
+elseif(UNIX AND NOT APPLE)
+    # Linux specific settings
+    find_package(X11)
+    if(X11_FOUND)
+        target_link_libraries(${PROJECT_NAME} PRIVATE X11)
+    endif()
 endif()

@@ -7,11 +7,11 @@
 // ---------------------------------------------------------------------------
 // WindowsIntegration
 // ---------------------------------------------------------------------------
-// Platform-specific Windows features:
+// Platform-specific system integration (Windows and Linux):
 //   - Global hotkey registration
-//   - Desktop notifications (toast)
+//   - Desktop notifications
 //   - Power/battery status detection
-//   - Multi-monitor awareness beyond Qt default
+//   - Process management
 class WindowsIntegration : public QObject
 {
     Q_OBJECT

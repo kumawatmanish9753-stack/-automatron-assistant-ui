@@ -7,46 +7,52 @@
 - CMake 3.21 or later
 - Qt 6.4 or later (with development libraries)
 
+### Linux Environment (Ubuntu / Debian / RHEL / Rocky Linux)
+- GCC 11+ or Clang 13+ (supporting C++20)
+- CMake 3.21+
+- Qt 6.4+ development packages:
+  ```bash
+  # Ubuntu / Debian
+  sudo apt update
+  sudo apt install -y build-essential cmake qt6-base-dev qt6-multimedia-dev libx11-dev
+
+  # Fedora / RHEL / Rocky Linux
+  sudo dnf install -y gcc-c++ cmake qt6-qtbase-devel qt6-qtmultimedia-devel libX11-devel
+  ```
+
 ### Required Tools
 ```
-Visual Studio Build Tools 2019+  (for MSVC compiler and Windows SDK)
-CMake 3.21+                       (from https://cmake.org/download/)
-Qt 6.4+                           (from https://www.qt.io/download-open-source)
+Visual Studio Build Tools 2019+ (Windows) or GCC/Clang (Linux)
+CMake 3.21+                     (https://cmake.org/download/)
+Qt 6.4+                         (https://www.qt.io/download-open-source)
 ```
 
-### Windows Libraries
-The following are linked automatically via CMake for Windows:
-- `user32.lib`      - Windows API (RegisterHotKey, message handling)
-- `shell32.lib`     - Shell integration (notifications)
-- `powrprof.lib`    - Power status queries
+### Platform Libraries
+- **Windows**: `user32.lib`, `shell32.lib`, `powrprof.lib` (linked automatically)
+- **Linux**: Standard POSIX libraries and X11 (if available)
 
 ## Build Steps
 
-### 1. Configure CMake
+### Option A: Building on Windows
 ```bash
 cd "D:\Omniroute\UI-UX design"
 mkdir build
 cd build
 cmake -G "Visual Studio 16 2019" -DCMAKE_PREFIX_PATH="C:/Qt/6.4.0/msvc2019_64" ..
-```
-
-**Note**: Adjust the Qt path to match your Qt 6 installation directory.
-
-### 2. Build the Project
-```bash
 cmake --build . --config Release
 ```
 
-Or use Visual Studio directly:
+### Option B: Building on Linux
 ```bash
-start OmnirouteAssistant.sln
-# Then build Release configuration from Visual Studio GUI
+cd "UI-UX design"
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j$(nproc)
 ```
 
-### 3. Verify Output
-The executable will be in:
-```
-build/bin/OmnirouteAssistant.exe
+The compiled binary will be placed at:
+```bash
+./bin/Voice-AI
 ```
 
 ## CMake Configuration Details

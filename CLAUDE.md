@@ -1,18 +1,18 @@
 # CLAUDE.md - Automatron Assistant
 
-Windows desktop Agentic AI Voice Assistant built with **C++20**, **Qt 6**, and **CMake**.
+Cross-platform (Windows & Linux) desktop Agentic AI Voice Assistant built with **C++20**, **Qt 6**, and **CMake**.
 
 ---
 
 ## 🛠️ Build & Development Commands
 
 ### Prerequisites
-- **OS**: Windows 10/11 (x64)
-- **Compiler**: MSVC (Visual Studio 2019/2022) with C++20 support
+- **OS**: Windows 10/11 (x64) or Linux (Ubuntu 22.04+, Debian, Fedora, RHEL, Rocky Linux)
+- **Compiler**: MSVC (Visual Studio 2019/2022) with C++20 support or GCC 11+ / Clang 13+
 - **Build System**: CMake 3.21+
 - **Qt Version**: Qt 6.4+ (Components: `Core`, `Gui`, `Widgets`, `Network`, `Multimedia`)
 
-### Configure & Build
+### Configure & Build (Windows)
 ```cmd
 # Create build directory and configure (adjust Qt path if needed)
 mkdir build && cd build
@@ -25,10 +25,24 @@ cmake --build . --config Release
 cmake --build . --config Debug
 ```
 
+### Configure & Build (Linux)
+```bash
+# Install dependencies (Ubuntu/Debian)
+sudo apt update && sudo apt install -y build-essential cmake qt6-base-dev qt6-multimedia-dev libx11-dev
+
+# Configure and build
+mkdir build && cd build
+cmake -DCMAKE_BUILD_TYPE=Release ..
+cmake --build . -j$(nproc)
+```
+
 ### Run Executable
-```cmd
-# Release binary output location
+```bash
+# Windows
 .\bin\Voice-AI.exe
+
+# Linux
+./bin/Voice-AI
 ```
 
 ---
