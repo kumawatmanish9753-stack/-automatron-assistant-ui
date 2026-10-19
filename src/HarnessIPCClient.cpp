@@ -6,8 +6,15 @@
 
 HarnessIPCClient::HarnessIPCClient(QObject *parent)
     : ILLMClient(parent)
-    , m_pipeName("automatron-harness")
 {
+#ifdef _WIN32
+    // Windows Named Pipe: \\.\pipe\automatron-harness
+    m_pipeName = "automatron-harness";
+#else
+    // Linux Unix domain socket: /tmp/automatron-harness.sock
+    m_pipeName = "/tmp/automatron-harness.sock";
+#endif
+
     m_socket = new QLocalSocket(this);
     m_reconnectTimer = new QTimer(this);
     m_reconnectTimer->setInterval(300);
@@ -35,12 +42,18 @@ HarnessIPCClient::~HarnessIPCClient()
 
 void HarnessIPCClient::startHarnessProcess()
 {
-    // Search candidates for the harness executable
+    // Search candidates for the harness executable (Windows and Linux)
     QStringList candidates = {
+        QCoreApplication::applicationDirPath() + "/automatron-harness",
         QCoreApplication::applicationDirPath() + "/automatron-harness.exe",
         QCoreApplication::applicationDirPath() + "/automatron-harness.bat",
         QCoreApplication::applicationDirPath() + "/automatron-harness.cmd",
+        QCoreApplication::applicationDirPath() + "/harness",
         QCoreApplication::applicationDirPath() + "/harness.exe",
+        "../agentic-harness-automatron/target/release/automatron-harness",
+        "../agentic-harness-automatron/target/debug/automatron-harness",
+        "../agentic-harness-automatron/target/release/automatron-harness.exe",
+        "../agentic-harness-automatron/target/debug/automatron-harness.exe",
         "D:/Omniroute/agentic-harness-automatron/target/release/automatron-harness.exe",
         "D:/Omniroute/agentic-harness-automatron/target/debug/automatron-harness.exe"
     };
@@ -57,7 +70,12 @@ void HarnessIPCClient::startHarnessProcess()
         qDebug() << "[HarnessIPC] Launching harness process from:" << foundBinary;
         m_harnessProcess = new QProcess(this);
         m_harnessProcess->setProgram(foundBinary);
+
+#ifdef _WIN32
         m_harnessProcess->setArguments({"--pipe-name", "\\\\.\\pipe\\" + m_pipeName});
+#else
+        m_harnessProcess->setArguments({"--pipe-name", m_pipeName});
+#endif
         m_harnessProcess->setProcessChannelMode(QProcess::ForwardedChannels);
 
         connect(m_harnessProcess, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
